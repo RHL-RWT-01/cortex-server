@@ -27,7 +27,7 @@ async def get_current_admin(current_user: dict = Depends(get_current_user)):
     Raises:
         HTTPException 403: If user is not an admin
     """
-    if current_user["email"]==ADMIN_EMAIL:
+    if current_user["email"] != ADMIN_EMAIL:
         logger.warning(f"Unauthorized admin access attempt by: {current_user['email']}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

@@ -17,7 +17,8 @@ async def generate_ai_feedback(
     user_assumptions: str,
     user_architecture: str,
     user_tradeoffs: str,
-    user_failures: str
+    user_failures: str,
+    architecture_image: str = None
 ) -> str:
     """Generate personalized AI feedback for a user's task response.
     
@@ -25,6 +26,7 @@ async def generate_ai_feedback(
     - Analyzes the quality of assumptions and reasoning
     - Evaluates awareness of constraints and trade-offs
     - Assesses failure scenario planning
+    - If architecture_image is provided, reviews the visual diagram
     - Asks follow-up questions to deepen thinking
     - Guides without providing complete solutions
     
@@ -35,12 +37,16 @@ async def generate_ai_feedback(
         user_architecture: User's proposed architecture/solution
         user_tradeoffs: User's trade-off analysis
         user_failures: User's failure scenario analysis
+        architecture_image: Base64 encoded PNG of the architecture diagram
     
     Returns:
         str: AI-generated feedback text
     """
     
     prompt = f"""You are an expert engineering mentor reviewing a software engineer's thinking process.
+    
+    If an architecture diagram image is provided, review it as the primary visual source of truth. 
+    Cross-reference it with the user's written architecture description.
 
 **Task Scenario:**
 {task_scenario}
@@ -79,8 +85,23 @@ Do NOT provide a complete solution. Guide them to think deeper.
 """
     
     try:
+        contents = [prompt]
+        if architecture_image:
+            # Handle base64 image data
+            if "," in architecture_image:
+                header, data = architecture_image.split(",", 1)
+                mime_type = header.split(";")[0].split(":")[1]
+            else:
+                data = architecture_image
+                mime_type = "image/png"
+            
+            contents.append({
+                "mime_type": mime_type,
+                "data": data
+            })
+
         # Generate feedback using singleton AI client
-        response = gemini_ai.generate_content(prompt)
+        response = gemini_ai.generate_content(contents)
         feedback = response.text
         
         logger.info("AI feedback generated successfully")
@@ -96,7 +117,8 @@ async def calculate_reasoning_score(
     user_assumptions: str,
     user_architecture: str,
     user_tradeoffs: str,
-    user_failures: str
+    user_failures: str,
+    architecture_image: str = None
 ) -> dict:
     """Calculate detailed reasoning scores across 5 dimensions using AI.
     
@@ -159,8 +181,22 @@ Provide ONLY a JSON response in this exact format:
 """
     
     try:
+        contents = [prompt]
+        if architecture_image:
+            if "," in architecture_image:
+                header, data = architecture_image.split(",", 1)
+                mime_type = header.split(";")[0].split(":")[1]
+            else:
+                data = architecture_image
+                mime_type = "image/png"
+            
+            contents.append({
+                "mime_type": mime_type,
+                "data": data
+            })
+
         # Calculate score using singleton AI client
-        response = gemini_ai.generate_content(prompt)
+        response = gemini_ai.generate_content(contents)
         import json
         
         result = response.text.strip()

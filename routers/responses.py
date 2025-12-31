@@ -75,7 +75,8 @@ async def submit_response(
         response.assumptions,
         response.architecture,
         response.trade_offs,
-        response.failure_scenarios
+        response.failure_scenarios,
+        response.architecture_image
     )
     
     # Calculate total score (average of all dimensions)
@@ -87,6 +88,8 @@ async def submit_response(
         "task_id": ObjectId(response.task_id),
         "assumptions": response.assumptions,
         "architecture": response.architecture,
+        "architecture_data": response.architecture_data,
+        "architecture_image": response.architecture_image,
         "trade_offs": response.trade_offs,
         "failure_scenarios": response.failure_scenarios,
         "submitted_at": datetime.utcnow(),
@@ -108,6 +111,8 @@ async def submit_response(
         "task_id": response.task_id,
         "assumptions": response_data["assumptions"],
         "architecture": response_data["architecture"],
+        "architecture_data": response_data["architecture_data"],
+        "architecture_image": response_data["architecture_image"],
         "trade_offs": response_data["trade_offs"],
         "failure_scenarios": response_data["failure_scenarios"],
         "submitted_at": response_data["submitted_at"],
@@ -175,7 +180,8 @@ async def request_ai_feedback(
         response["assumptions"],
         response["architecture"],
         response["trade_offs"],
-        response["failure_scenarios"]
+        response["failure_scenarios"],
+        response.get("architecture_image")
     )
     
     # Update response with feedback
@@ -214,6 +220,8 @@ async def get_user_responses(
             "task_id": str(r["task_id"]),
             "assumptions": r["assumptions"],
             "architecture": r["architecture"],
+            "architecture_data": r.get("architecture_data"),
+            "architecture_image": r.get("architecture_image"),
             "trade_offs": r["trade_offs"],
             "failure_scenarios": r["failure_scenarios"],
             "submitted_at": r["submitted_at"],
@@ -261,6 +269,8 @@ async def get_response(
         "task_id": str(response["task_id"]),
         "assumptions": response["assumptions"],
         "architecture": response["architecture"],
+        "architecture_data": response.get("architecture_data"),
+        "architecture_image": response.get("architecture_image"),
         "trade_offs": response["trade_offs"],
         "failure_scenarios": response["failure_scenarios"],
         "submitted_at": response["submitted_at"],

@@ -7,6 +7,8 @@ class ResponseBase(BaseModel):
     task_id: str
     assumptions: str
     architecture: str
+    architecture_data: Optional[str] = None
+    architecture_image: Optional[str] = None
     trade_offs: str
     failure_scenarios: str
 

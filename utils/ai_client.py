@@ -55,16 +55,16 @@ class GeminiAI:
         """
         return self._model
     
-    def generate_content(self, prompt: str):
+    def generate_content(self, contents):
         """Generate content using the Gemini model.
         
         Args:
-            prompt: Text prompt for generation
+            contents: Text prompt or list of contents (text, images) for generation
             
         Returns:
             Response from Gemini model
         """
-        return self._model.generate_content(prompt)
+        return self._model.generate_content(contents)
 
 
 # Singleton instance - import and use this everywhere
