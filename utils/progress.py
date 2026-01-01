@@ -6,7 +6,7 @@ Provides functions for:
 - Managing activity history
 """
 
-from datetime import date, timedelta
+from datetime import datetime, date, timedelta, time
 from database import get_database
 from bson import ObjectId
 
@@ -99,6 +99,9 @@ async def update_progress(user_id: ObjectId, score: float):
     # Calculate streaks
     current_streak, longest_streak = await calculate_streak(user_id)
     
+    # Calculate today's date as a datetime object at midnight for MongoDB compatibility
+    today_dt = datetime.combine(date.today(), time.min)
+    
     # Get current progress
     progress = await db.progress.find_one({"user_id": user_id})
     
@@ -109,12 +112,12 @@ async def update_progress(user_id: ObjectId, score: float):
             "total_tasks_completed": 1,
             "current_streak": current_streak,
             "longest_streak": longest_streak,
-            "last_activity_date": date.today(),
+            "last_activity_date": today_dt,
             "total_score": score,
             "average_score": score,
             "activity_history": [
                 {
-                    "date": date.today(),
+                    "date": today_dt,
                     "tasks_completed": 1,
                     "score_earned": score
                 }
@@ -129,17 +132,17 @@ async def update_progress(user_id: ObjectId, score: float):
         
         # Update activity history
         activity_history = progress.get("activity_history", [])
-        today_str = date.today()
         
         # Check if there's already an entry for today
-        today_entry = next((a for a in activity_history if a["date"] == today_str), None)
+        # Note: We compare with today_dt which is midnight today
+        today_entry = next((a for a in activity_history if a["date"] == today_dt), None)
         
         if today_entry:
             today_entry["tasks_completed"] += 1
             today_entry["score_earned"] += score
         else:
             activity_history.append({
-                "date": today_str,
+                "date": today_dt,
                 "tasks_completed": 1,
                 "score_earned": score
             })
@@ -151,7 +154,7 @@ async def update_progress(user_id: ObjectId, score: float):
                     "total_tasks_completed": total_tasks,
                     "current_streak": current_streak,
                     "longest_streak": longest_streak,
-                    "last_activity_date": date.today(),
+                    "last_activity_date": today_dt,
                     "total_score": total_score,
                     "average_score": average_score,
                     "activity_history": activity_history

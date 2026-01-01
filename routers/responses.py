@@ -243,7 +243,7 @@ async def get_response(
     db = get_database()
     
     try:
-        response = db.responses.find_one({"_id": ObjectId(response_id)})
+        response = await db.responses.find_one({"_id": ObjectId(response_id)})
     except:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
