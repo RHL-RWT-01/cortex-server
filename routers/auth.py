@@ -16,6 +16,7 @@ from utils.auth import (
     create_access_token,
     get_current_user
 )
+from utils.admin import ADMIN_EMAIL
 from config import settings
 from logger import get_logger
 
@@ -140,6 +141,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "email": current_user["email"],
         "full_name": current_user["full_name"],
         "selected_role": current_user.get("selected_role"),
+        "is_admin": current_user["email"] == ADMIN_EMAIL,
         "created_at": current_user["created_at"],
         "last_login": current_user.get("last_login")
     }

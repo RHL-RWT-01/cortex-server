@@ -25,6 +25,7 @@ class UserUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: str
+    is_admin: bool = False
     created_at: datetime
     last_login: Optional[datetime] = None
     

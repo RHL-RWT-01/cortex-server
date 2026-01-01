@@ -19,6 +19,7 @@ from schemas.drill import (
     DrillType
 )
 from utils.auth import get_current_user
+from utils.admin import get_current_admin
 from bson import ObjectId
 from datetime import datetime
 
@@ -28,7 +29,7 @@ router = APIRouter()
 @router.post("", response_model=DrillResponse, status_code=status.HTTP_201_CREATED)
 async def create_drill(
     drill: DrillCreate,
-    current_user: dict = Depends(get_current_user)
+    current_admin: dict = Depends(get_current_admin)
 ):
     """Create a new thinking drill (admin only in production)"""
     db = get_database()

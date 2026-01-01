@@ -13,6 +13,7 @@ from datetime import datetime
 from database import get_database
 from schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskFilter, Role, Difficulty
 from utils.auth import get_current_user
+from utils.admin import get_current_admin
 from bson import ObjectId
 
 router = APIRouter()
@@ -21,7 +22,7 @@ router = APIRouter()
 @router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
 async def create_task(
     task: TaskCreate,
-    current_user: dict = Depends(get_current_user)
+    current_admin: dict = Depends(get_current_admin)
 ):
     """Create a new engineering task.
     
