@@ -79,7 +79,9 @@ async def submit_response(
         response.architecture,
         response.trade_offs,
         response.failure_scenarios,
-        response.architecture_image
+        response.architecture_image,
+        task_scenario=task["scenario"],
+        task_prompts=task["prompts"]
     )
     
     # Calculate total score (average of all dimensions)
