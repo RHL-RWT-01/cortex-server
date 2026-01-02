@@ -1,14 +1,16 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from database import get_database
 from schemas.user import UserUpdate, UserResponse
 from utils.auth import get_current_user
 from utils.admin import ADMIN_EMAIL
+from utils.rate_limit import limiter
 
 router = APIRouter()
 
 
 @router.get("/profile", response_model=UserResponse)
-async def get_profile(current_user: dict = Depends(get_current_user)):
+@limiter.limit("30/minute")
+async def get_profile(request: Request, current_user: dict = Depends(get_current_user)):
     """Get authenticated user's profile information.
     
     Returns complete profile including email, name, role, and activity dates.
@@ -31,7 +33,9 @@ async def get_profile(current_user: dict = Depends(get_current_user)):
 
 
 @router.put("/profile", response_model=UserResponse)
+@limiter.limit("10/minute")
 async def update_profile(
+    request: Request,
     user_update: UserUpdate,
     current_user: dict = Depends(get_current_user)
 ):

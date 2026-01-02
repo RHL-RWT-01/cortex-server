@@ -7,20 +7,23 @@ Provides endpoints for:
 - Getting random tasks
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends, Query
+from fastapi import APIRouter, HTTPException, status, Depends, Query, Request
 from typing import List, Optional
 from datetime import datetime
 from database import get_database
 from schemas.task import TaskCreate, TaskUpdate, TaskResponse, TaskFilter, Role, Difficulty
 from utils.auth import get_current_user
 from utils.admin import get_current_admin
+from utils.rate_limit import limiter
 from bson import ObjectId
 
 router = APIRouter()
 
 
 @router.post("", response_model=TaskResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("20/minute")
 async def create_task(
+    request: Request,
     task: TaskCreate,
     current_admin: dict = Depends(get_current_admin)
 ):
@@ -66,7 +69,9 @@ async def create_task(
 
 
 @router.get("", response_model=List[TaskResponse])
+@limiter.limit("60/minute")
 async def get_tasks(
+    request: Request,
     role: Optional[Role] = None,
     difficulty: Optional[Difficulty] = None,
     current_user: dict = Depends(get_current_user)
@@ -99,7 +104,9 @@ async def get_tasks(
 
 
 @router.get("/{task_id}", response_model=TaskResponse)
+@limiter.limit("60/minute")
 async def get_task(
+    request: Request,
     task_id: str,
     current_user: dict = Depends(get_current_user)
 ):
@@ -134,7 +141,9 @@ async def get_task(
 
 
 @router.get("/random/pick")
+@limiter.limit("60/minute")
 async def get_random_task(
+    request: Request,
     role: Optional[Role] = None,
     difficulty: Optional[Difficulty] = None,
     current_user: dict = Depends(get_current_user)

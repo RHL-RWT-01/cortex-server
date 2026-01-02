@@ -6,7 +6,7 @@ Provides endpoints for:
 - Getting current user information
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from datetime import datetime, timedelta
 from database import get_database
 from schemas.user import UserCreate, UserLogin, UserResponse, Token
@@ -19,13 +19,15 @@ from utils.auth import (
 from utils.admin import ADMIN_EMAIL
 from config import settings
 from logger import get_logger
+from utils.rate_limit import limiter
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 
 @router.post("/signup", response_model=Token, status_code=status.HTTP_201_CREATED)
-async def signup(user: UserCreate):
+@limiter.limit("5/minute")
+async def signup(request: Request, user: UserCreate):
     """Register a new user and return access token.
     
     Creates a new user account with hashed password and generates a JWT token.
@@ -76,7 +78,8 @@ async def signup(user: UserCreate):
 
 
 @router.post("/login", response_model=Token)
-async def login(user_login: UserLogin):
+@limiter.limit("10/minute")
+async def login(request: Request, user_login: UserLogin):
     """Authenticate user and return JWT token.
     
     Verifies credentials and generates a new JWT token.

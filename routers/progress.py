@@ -5,17 +5,20 @@ Provides endpoints for:
 - Calculating current and longest streaks
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from database import get_database
 from schemas.progress import ProgressResponse
 from utils.auth import get_current_user
 from utils.progress import calculate_streak
+from utils.rate_limit import limiter
 
 router = APIRouter()
 
 
 @router.get("/stats", response_model=ProgressResponse)
+@limiter.limit("60/minute")
 async def get_progress(
+    request: Request,
     current_user: dict = Depends(get_current_user)
 ):
     """Get user's progress statistics and achievements.

@@ -7,7 +7,7 @@ Provides endpoints for:
 - Getting specific response details
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from typing import List
 from datetime import datetime, timedelta
 from database import get_database
@@ -22,13 +22,16 @@ from utils.ai import generate_ai_feedback, calculate_reasoning_score
 from utils.progress import update_progress
 from bson import ObjectId
 from logger import get_logger
+from utils.rate_limit import limiter
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 
 @router.post("", response_model=ResponseResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("10/minute")
 async def submit_response(
+    request: Request,
     response: ResponseCreate,
     current_user: dict = Depends(get_current_user)
 ):
@@ -124,7 +127,9 @@ async def submit_response(
 
 
 @router.post("/{response_id}/feedback")
+@limiter.limit("5/minute")
 async def request_ai_feedback(
+    request: Request,
     response_id: str,
     current_user: dict = Depends(get_current_user)
 ):
@@ -203,7 +208,9 @@ async def request_ai_feedback(
 
 
 @router.get("/user/history", response_model=List[ResponseResponse])
+@limiter.limit("30/minute")
 async def get_user_responses(
+    request: Request,
     current_user: dict = Depends(get_current_user)
 ):
     """Get all responses submitted by current user"""

@@ -8,7 +8,7 @@ Provides endpoints for:
 - Getting drill statistics
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Request
 from typing import List
 from database import get_database
 from schemas.drill import (
@@ -22,6 +22,7 @@ from utils.auth import get_current_user
 from utils.admin import get_current_admin
 from bson import ObjectId
 from datetime import datetime
+from utils.rate_limit import limiter
 
 router = APIRouter()
 
@@ -60,7 +61,9 @@ async def create_drill(
 
 
 @router.get("/random")
+@limiter.limit("30/minute")
 async def get_random_drill(
+    request: Request,
     drill_type: DrillType = None,
     current_user: dict = Depends(get_current_user)
 ):
@@ -104,7 +107,9 @@ async def get_random_drill(
 
 
 @router.post("/submit", response_model=DrillResult)
+@limiter.limit("20/minute")
 async def submit_drill(
+    request: Request,
     submission: DrillSubmission,
     current_user: dict = Depends(get_current_user)
 ):

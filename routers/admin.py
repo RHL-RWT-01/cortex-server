@@ -9,7 +9,7 @@ Provides endpoints for:
 - Triggering daily task generation
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from typing import List
 from database import get_database
 from schemas.task import TaskCreate, TaskResponse
@@ -18,13 +18,16 @@ from utils.admin import get_current_admin
 from utils.ai_generation import generate_task_with_ai, generate_drill_with_ai, generate_daily_tasks
 from datetime import datetime
 from logger import get_logger
+from utils.rate_limit import limiter
 
 logger = get_logger(__name__)
 router = APIRouter()
 
 
 @router.post("/tasks/generate", response_model=TaskResponse)
+@limiter.limit("5/minute")
 async def generate_task(
+    request: Request,
     role: str,
     difficulty: str,
     current_admin: dict = Depends(get_current_admin)
@@ -65,7 +68,9 @@ async def generate_task(
 
 
 @router.post("/drills/generate", response_model=DrillResponse)
+@limiter.limit("5/minute")
 async def generate_drill(
+    request: Request,
     drill_type: str,
     current_admin: dict = Depends(get_current_admin)
 ):
@@ -103,7 +108,9 @@ async def generate_drill(
 
 
 @router.post("/tasks/generate-daily")
+@limiter.limit("2/minute")
 async def generate_daily_tasks_endpoint(
+    request: Request,
     current_admin: dict = Depends(get_current_admin)
 ):
     """Generate daily tasks for all roles using AI.
@@ -228,7 +235,8 @@ async def create_drill_manually(
 
 
 @router.get("/stats")
-async def get_admin_stats(current_admin: dict = Depends(get_current_admin)):
+@limiter.limit("30/minute")
+async def get_admin_stats(request: Request, current_admin: dict = Depends(get_current_admin)):
     """Get admin statistics.
     
     Args:

@@ -13,6 +13,9 @@ from database import connect_to_mongo, close_mongo_connection
 from routers import auth, users, tasks, responses, progress, drills, admin
 from config import settings
 from logger import get_logger
+from utils.rate_limit import limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
 
 logger = get_logger(__name__)
 
@@ -48,6 +51,12 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan
 )
+
+# Add slowapi limiter to app state
+app.state.limiter = limiter
+
+# Add exception handler for rate limiting
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Initialize cron jobs
 crons = Crons(app)
