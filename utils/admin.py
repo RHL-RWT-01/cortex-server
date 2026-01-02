@@ -1,19 +1,20 @@
-"""Admin authentication middleware and utilities.
-
-Provides admin-only access control for protected routes.
-"""
-
 from fastapi import HTTPException, status, Depends
 from database import get_database
 from utils.auth import get_current_user
 from logger import get_logger
-import os
 from config import settings
 
 logger = get_logger(__name__)
 
-# Admin email list - in production, store this in database
-ADMIN_EMAIL=settings.admin_email
+def is_admin(email: str) -> bool:
+    """Check if an email belongs to an administrator.
+    
+    Logic is based solely on the ADMIN_EMAIL environment variable.
+    """
+    if not settings.admin_email:
+        return False
+        
+    return email.strip().lower() == settings.admin_email.strip().lower()
 
 async def get_current_admin(current_user: dict = Depends(get_current_user)):
     """Verify that the current user has admin privileges.
@@ -27,7 +28,7 @@ async def get_current_admin(current_user: dict = Depends(get_current_user)):
     Raises:
         HTTPException 403: If user is not an admin
     """
-    if current_user["email"] != ADMIN_EMAIL:
+    if not is_admin(current_user["email"]):
         logger.warning(f"Unauthorized admin access attempt by: {current_user['email']}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

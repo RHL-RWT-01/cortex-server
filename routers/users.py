@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends, Request
 from database import get_database
 from schemas.user import UserUpdate, UserResponse
 from utils.auth import get_current_user
-from utils.admin import ADMIN_EMAIL
+from utils.admin import is_admin
 from utils.rate_limit import limiter
 
 router = APIRouter()
@@ -26,7 +26,7 @@ async def get_profile(request: Request, current_user: dict = Depends(get_current
         "email": current_user["email"],
         "full_name": current_user["full_name"],
         "selected_role": current_user.get("selected_role"),
-        "is_admin": current_user["email"] == ADMIN_EMAIL,
+        "is_admin": is_admin(current_user["email"]),
         "created_at": current_user["created_at"],
         "last_login": current_user.get("last_login")
     }
@@ -81,7 +81,7 @@ async def update_profile(
         "email": updated_user["email"],
         "full_name": updated_user["full_name"],
         "selected_role": updated_user.get("selected_role"),
-        "is_admin": updated_user["email"] == ADMIN_EMAIL,
+        "is_admin": is_admin(updated_user["email"]),
         "created_at": updated_user["created_at"],
         "last_login": updated_user.get("last_login")
     }
