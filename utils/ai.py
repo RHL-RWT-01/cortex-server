@@ -72,6 +72,7 @@ EVALUATION SPECIFICATIONS:
 3. COHESION: Do the assumptions lead logically to the architecture, and are the trade-offs honest?
 
 Output a concise, high-density technical critique focusing purely on structural integrity and architectural trade-offs.
+- CRITICAL: If the submission is trivial, generic, or lacks specific details (e.g. just a few boxes), score it extremely low (0-1).
 """
     return await _call_agent("Architecture-Critique", prompt, architecture_image)
 
@@ -121,8 +122,7 @@ REPORTS:
 SYNTHESIS SPECIFICATIONS:
 1. TONE: Be the "tough but fair" mentor. Use a Growth Mindset.
 2. RECONCILIATION: If reports conflict, use your seniority to provide the final verdict.
-3. FOLLOW-UPS: Ask 2-3 specific, deep questions that probe the user's weak points.
-4. SCORING (0-10): 
+3. SCORING (0-10): 
    - Clarity: How well-explained is it?
    - Constraints Awareness: Did they follow the requirements?
    - Trade-off Reasoning: Did they weigh options properly?
