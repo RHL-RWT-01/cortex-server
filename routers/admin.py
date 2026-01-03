@@ -258,3 +258,233 @@ async def get_admin_stats(request: Request, current_admin: dict = Depends(get_cu
         "total_drills": total_drills,
         "total_responses": total_responses
     }
+
+
+@router.get("/tasks")
+async def get_all_tasks(current_admin: dict = Depends(get_current_admin)):
+    """Get all tasks for admin management.
+    
+    Args:
+        current_admin: Admin user (injected)
+    
+    Returns:
+        List[dict]: All tasks
+    """
+    db = get_database()
+    
+    tasks = await db.tasks.find({}).sort("created_at", -1).to_list(length=None)
+    
+    return [
+        {
+            "id": str(task["_id"]),
+            "title": task["title"],
+            "description": task["description"],
+            "role": task["role"],
+            "difficulty": task["difficulty"],
+            "estimated_time_minutes": task["estimated_time_minutes"],
+            "scenario": task.get("scenario", ""),
+            "prompts": task.get("prompts", []),
+            "created_at": task["created_at"]
+        }
+        for task in tasks
+    ]
+
+
+@router.get("/drills")
+async def get_all_drills(current_admin: dict = Depends(get_current_admin)):
+    """Get all drills for admin management.
+    
+    Args:
+        current_admin: Admin user (injected)
+    
+    Returns:
+        List[dict]: All drills
+    """
+    db = get_database()
+    
+    drills = await db.drills.find({}).sort("created_at", -1).to_list(length=None)
+    
+    return [
+        {
+            "id": str(drill["_id"]),
+            "title": drill["title"],
+            "drill_type": drill["drill_type"],
+            "question": drill["question"],
+            "options": drill["options"],
+            "correct_answer": drill["correct_answer"],
+            "explanation": drill["explanation"],
+            "created_at": drill["created_at"]
+        }
+        for drill in drills
+    ]
+
+
+@router.put("/tasks/{task_id}")
+async def update_task(
+    task_id: str,
+    task: TaskCreate,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Update a task by ID.
+    
+    Args:
+        task_id: Task ID to update
+        task: Updated task data
+        current_admin: Admin user (injected)
+    
+    Returns:
+        dict: Success message
+    """
+    from bson import ObjectId
+    db = get_database()
+    
+    try:
+        task_data = {
+            "title": task.title,
+            "description": task.description,
+            "role": task.role,
+            "difficulty": task.difficulty,
+            "estimated_time_minutes": task.estimated_time_minutes,
+            "scenario": task.scenario,
+            "prompts": task.prompts
+        }
+        
+        result = await db.tasks.update_one(
+            {"_id": ObjectId(task_id)},
+            {"$set": task_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found"
+            )
+        
+        logger.info(f"Admin {current_admin['email']} updated task {task_id}")
+        
+        return {"message": "Task updated successfully"}
+    except Exception as e:
+        logger.error(f"Failed to update task {task_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid task ID or data"
+        )
+
+
+@router.put("/drills/{drill_id}")
+async def update_drill(
+    drill_id: str,
+    drill: DrillCreate,
+    current_admin: dict = Depends(get_current_admin)
+):
+    """Update a drill by ID.
+    
+    Args:
+        drill_id: Drill ID to update
+        drill: Updated drill data
+        current_admin: Admin user (injected)
+    
+    Returns:
+        dict: Success message
+    """
+    from bson import ObjectId
+    db = get_database()
+    
+    try:
+        drill_data = {
+            "title": drill.title,
+            "drill_type": drill.drill_type,
+            "question": drill.question,
+            "options": drill.options,
+            "correct_answer": drill.correct_answer,
+            "explanation": drill.explanation
+        }
+        
+        result = await db.drills.update_one(
+            {"_id": ObjectId(drill_id)},
+            {"$set": drill_data}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Drill not found"
+            )
+        
+        logger.info(f"Admin {current_admin['email']} updated drill {drill_id}")
+        
+        return {"message": "Drill updated successfully"}
+    except Exception as e:
+        logger.error(f"Failed to update drill {drill_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid drill ID or data"
+        )
+
+
+@router.delete("/tasks/{task_id}")
+async def delete_task(task_id: str, current_admin: dict = Depends(get_current_admin)):
+    """Delete a task by ID.
+    
+    Args:
+        task_id: Task ID to delete
+        current_admin: Admin user (injected)
+    
+    Returns:
+        dict: Success message
+    """
+    from bson import ObjectId
+    db = get_database()
+    
+    try:
+        result = await db.tasks.delete_one({"_id": ObjectId(task_id)})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Task not found"
+            )
+        
+        logger.info(f"Admin {current_admin['email']} deleted task {task_id}")
+        
+        return {"message": "Task deleted successfully"}
+    except Exception as e:
+        logger.error(f"Failed to delete task {task_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid task ID"
+        )
+
+
+@router.delete("/drills/{drill_id}")
+async def delete_drill(drill_id: str, current_admin: dict = Depends(get_current_admin)):
+    """Delete a drill by ID.
+    
+    Args:
+        drill_id: Drill ID to delete
+        current_admin: Admin user (injected)
+    
+    Returns:
+        dict: Success message
+    """
+    from bson import ObjectId
+    db = get_database()
+    
+    try:
+        result = await db.drills.delete_one({"_id": ObjectId(drill_id)})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Drill not found"
+            )
+        
+        logger.info(f"Admin {current_admin['email']} deleted drill {drill_id}")
+        
+        return {"message": "Drill deleted successfully"}
+    except Exception as e:
+        logger.error(f"Failed to delete drill {drill_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid drill ID"
+        )
