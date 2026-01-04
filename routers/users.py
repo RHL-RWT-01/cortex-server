@@ -26,6 +26,7 @@ async def get_profile(request: Request, current_user: dict = Depends(get_current
         "email": current_user["email"],
         "full_name": current_user["full_name"],
         "selected_role": current_user.get("selected_role"),
+        "selected_level": current_user.get("selected_level"),
         "is_admin": is_admin(current_user["email"]),
         "created_at": current_user["created_at"],
         "last_login": current_user.get("last_login")
@@ -61,6 +62,8 @@ async def update_profile(
         update_data["full_name"] = user_update.full_name
     if user_update.selected_role is not None:
         update_data["selected_role"] = user_update.selected_role
+    if user_update.selected_level is not None:
+        update_data["selected_level"] = user_update.selected_level
     
     if not update_data:
         raise HTTPException(
@@ -81,6 +84,7 @@ async def update_profile(
         "email": updated_user["email"],
         "full_name": updated_user["full_name"],
         "selected_role": updated_user.get("selected_role"),
+        "selected_level": updated_user.get("selected_level"),
         "is_admin": is_admin(updated_user["email"]),
         "created_at": updated_user["created_at"],
         "last_login": updated_user.get("last_login")

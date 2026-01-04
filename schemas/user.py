@@ -7,6 +7,7 @@ class UserBase(BaseModel):
     email: EmailStr
     full_name: str
     selected_role: Optional[str] = None
+    selected_level: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -21,6 +22,7 @@ class UserLogin(BaseModel):
 class UserUpdate(BaseModel):
     full_name: Optional[str] = None
     selected_role: Optional[str] = None  # Accept string to match client
+    selected_level: Optional[str] = None
 
 
 class UserResponse(UserBase):

@@ -5,16 +5,19 @@ from enum import Enum
 
 
 class Difficulty(str, Enum):
-    BEGINNER = "beginner"
-    INTERMEDIATE = "intermediate"
-    ADVANCED = "advanced"
+    BEGINNER = "Beginner"
+    INTERMEDIATE = "Intermediate"
+    ADVANCED = "Advanced"
 
 
 class Role(str, Enum):
     BACKEND = "Backend Engineer"
     FRONTEND = "Frontend Engineer"
+    FULLSTACK = "Fullstack Engineer"
     SYSTEMS = "Systems Engineer"
     DATA = "Data Engineer"
+    DEVOPS = "DevOps Engineer"
+    SECURITY = "Security Engineer"
 
 
 class TaskBase(BaseModel):

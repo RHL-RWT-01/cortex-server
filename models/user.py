@@ -12,6 +12,7 @@ class User:
         hashed_password: str,
         full_name: str,
         selected_role: Optional[str] = None,
+        selected_level: Optional[str] = None,
         created_at: datetime = None,
         last_login: Optional[datetime] = None,
         _id: ObjectId = None
@@ -21,6 +22,7 @@ class User:
         self.hashed_password = hashed_password
         self.full_name = full_name
         self.selected_role = selected_role
+        self.selected_level = selected_level
         self.created_at = created_at or datetime.utcnow()
         self.last_login = last_login
     
@@ -31,6 +33,7 @@ class User:
             "hashed_password": self.hashed_password,
             "full_name": self.full_name,
             "selected_role": self.selected_role,
+            "selected_level": self.selected_level,
             "created_at": self.created_at,
             "last_login": self.last_login
         }
@@ -43,6 +46,7 @@ class User:
             hashed_password=data["hashed_password"],
             full_name=data["full_name"],
             selected_role=data.get("selected_role"),
+            selected_level=data.get("selected_level"),
             created_at=data.get("created_at"),
             last_login=data.get("last_login")
         )

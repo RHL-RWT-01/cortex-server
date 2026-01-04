@@ -61,6 +61,7 @@ async def signup(request: Request, user: UserCreate):
         "hashed_password": hashed_password,
         "full_name": user.full_name,
         "selected_role": user.selected_role,
+        "selected_level": user.selected_level,
         "created_at": datetime.utcnow(),
         "last_login": None
     }
@@ -144,6 +145,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "email": current_user["email"],
         "full_name": current_user["full_name"],
         "selected_role": current_user.get("selected_role"),
+        "selected_level": current_user.get("selected_level"),
         "is_admin": is_admin(current_user["email"]),
         "created_at": current_user["created_at"],
         "last_login": current_user.get("last_login")
