@@ -1,3 +1,8 @@
+### Cortex UI
+```
+https://github.com/RHL-RWT-01/cortex-client
+```
+
 # Cortex API Server
 
 Backend server for the Cortex Engineering Thinking Training Platform.
@@ -243,15 +248,6 @@ The system uses Google Gemini for:
 - Password hashing with bcrypt
 - CORS middleware configured
 - Environment variables for secrets
-
-## Production Deployment
-
-1. Set strong `SECRET_KEY` in production
-2. Configure proper CORS origins
-3. Use MongoDB Atlas production cluster
-4. Enable rate limiting (not included in MVP)
-5. Add admin authentication for task/drill creation
-6. Set up logging and monitoring
 
 ## License
 
