@@ -25,7 +25,7 @@ logging.addLevelName(CRON_LEVEL, "CRON")
 def cron(self, message, *args, **kwargs):
     """Log a message with CRON level."""
     if self.isEnabledFor(CRON_LEVEL):
-        self._log(CRON_LEVEL, message, *args, **kwargs)
+        self._log(CRON_LEVEL, message, args, **kwargs)
 
 
 # Add cron method to Logger class

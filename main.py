@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
     
     # Start cron scheduler
     if crons:
-        crons.start()
+        await crons.start()
         logger.cron("CRON SCHEDULER STARTED")
         logger.cron("Registered job: daily_task_generation (0 0 * * * = midnight UTC)")
     
@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     # Shutdown: Stop cron jobs and clean up database connections
     logger.info("Shutting down Cortex API server...")
     if crons:
-        crons.stop()
+        await crons.stop()
         logger.cron("CRON SCHEDULER STOPPED")
     await close_mongo_connection()
     logger.info("Database connection closed")
