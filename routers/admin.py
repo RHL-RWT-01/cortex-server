@@ -113,22 +113,30 @@ async def generate_daily_tasks_endpoint(
     request: Request,
     current_admin: dict = Depends(get_current_admin)
 ):
-    """Generate daily tasks for all roles using AI.
+    """Generate daily tasks for all roles and difficulties using AI.
     
+    Generates 12 tasks (4 roles x 3 difficulties) with deduplication.
     This endpoint can be called manually or by cron job.
     
     Args:
         current_admin: Admin user (injected)
     
     Returns:
-        dict: Summary of generated tasks
+        dict: Summary of generated tasks including count per role/difficulty
     """
     db = get_database()
     
     logger.info(f"Admin {current_admin['email']} triggered daily task generation")
     
-    # Generate tasks
-    tasks = await generate_daily_tasks()
+    # Generate tasks with database for deduplication
+    tasks = await generate_daily_tasks(db=db)
+    
+    if not tasks:
+        return {
+            "message": "No new tasks generated (all combinations may already exist)",
+            "task_ids": [],
+            "summary": {}
+        }
     
     # Save to database
     inserted_ids = []
@@ -137,12 +145,22 @@ async def generate_daily_tasks_endpoint(
         result = await db.tasks.insert_one(task_data)
         inserted_ids.append(str(result.inserted_id))
     
+    # Create summary by role and difficulty
+    summary = {}
+    for task in tasks:
+        role = task["role"]
+        difficulty = task["difficulty"]
+        key = f"{role} - {difficulty}"
+        summary[key] = summary.get(key, 0) + 1
+    
     logger.info(f"Generated {len(inserted_ids)} daily tasks")
     
     return {
         "message": f"Successfully generated {len(tasks)} daily tasks",
         "task_ids": inserted_ids,
-        "roles": [task["role"] for task in tasks]
+        "roles": list(set(task["role"] for task in tasks)),
+        "difficulties": list(set(task["difficulty"] for task in tasks)),
+        "summary": summary
     }
 
 

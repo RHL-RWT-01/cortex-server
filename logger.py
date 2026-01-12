@@ -5,6 +5,7 @@ Provides structured logging with:
 - File output for persistent logs
 - Request/response tracing
 - Database operation tracking
+- Custom CRON level for cron job tracking
 """
 
 import logging
@@ -15,6 +16,20 @@ from pathlib import Path
 # Create logs directory if it doesn't exist
 log_dir = Path("logs")
 log_dir.mkdir(exist_ok=True)
+
+# Define custom CRON log level (between INFO=20 and WARNING=30)
+CRON_LEVEL = 25
+logging.addLevelName(CRON_LEVEL, "CRON")
+
+
+def cron(self, message, *args, **kwargs):
+    """Log a message with CRON level."""
+    if self.isEnabledFor(CRON_LEVEL):
+        self._log(CRON_LEVEL, message, *args, **kwargs)
+
+
+# Add cron method to Logger class
+logging.Logger.cron = cron
 
 # Define log format
 LOG_FORMAT = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -42,6 +57,15 @@ error_handler = logging.FileHandler(
 error_handler.setLevel(logging.ERROR)
 error_handler.setFormatter(formatter)
 
+# Cron file handler - dedicated log file for cron jobs
+cron_handler = logging.FileHandler(
+    log_dir / f"cron_{datetime.now().strftime('%Y%m%d')}.log"
+)
+cron_handler.setLevel(CRON_LEVEL)
+cron_handler.setFormatter(formatter)
+# Only log CRON level messages to this file
+cron_handler.addFilter(lambda record: record.levelno == CRON_LEVEL)
+
 
 def get_logger(name: str) -> logging.Logger:
     """Get a configured logger instance.
@@ -50,7 +74,7 @@ def get_logger(name: str) -> logging.Logger:
         name: Logger name (usually __name__ of the module)
     
     Returns:
-        logging.Logger: Configured logger instance
+        logging.Logger: Configured logger instance with cron() method
     """
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
@@ -65,5 +89,7 @@ def get_logger(name: str) -> logging.Logger:
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
     logger.addHandler(error_handler)
+    logger.addHandler(cron_handler)
     
     return logger
+

@@ -19,28 +19,41 @@ from slowapi import _rate_limit_exceeded_handler
 
 logger = get_logger(__name__)
 
+# Initialize cron jobs instance at module level
+crons = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Manage application lifecycle: startup and shutdown events.
     
     This context manager handles:
-    - Startup: Establish MongoDB connection
-    - Shutdown: Close MongoDB connection gracefully
+    - Startup: Establish MongoDB connection and start cron jobs
+    - Shutdown: Stop cron jobs and close MongoDB connection gracefully
     
     Args:
         app: The FastAPI application instance
     """
+    global crons
+    
     logger.info("Starting Cortex API server...")
     # Startup: Connect to MongoDB database
     await connect_to_mongo()
     logger.info("Database connection established")
-    logger.info("Cron jobs initialized (daily task generation at midnight)")
+    
+    # Start cron scheduler
+    if crons:
+        crons.start()
+        logger.cron("CRON SCHEDULER STARTED")
+        logger.cron("Registered job: daily_task_generation (0 0 * * * = midnight UTC)")
     
     yield
     
-    # Shutdown: Clean up database connections
+    # Shutdown: Stop cron jobs and clean up database connections
     logger.info("Shutting down Cortex API server...")
+    if crons:
+        crons.stop()
+        logger.cron("CRON SCHEDULER STOPPED")
     await close_mongo_connection()
     logger.info("Database connection closed")
 
@@ -58,7 +71,7 @@ app.state.limiter = limiter
 # Add exception handler for rate limiting
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Initialize cron jobs
+# Initialize cron jobs manager
 crons = Crons(app)
 
 # Add cron management endpoints

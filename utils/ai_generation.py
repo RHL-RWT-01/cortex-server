@@ -170,27 +170,100 @@ Make it:
         }
 
 
-async def generate_daily_tasks() -> List[Dict]:
-    """Generate daily tasks for all engineering roles.
+async def check_task_exists(db, title: str, role: str, difficulty: str) -> bool:
+    """Check if a similar task already exists in the database.
+    
+    Args:
+        db: Database connection
+        title: Task title to check
+        role: Engineering role
+        difficulty: Task difficulty
     
     Returns:
-        list: List of generated tasks (one per role at varying difficulties)
+        bool: True if a similar task exists, False otherwise
     """
-    logger.info("Generating daily tasks for all roles")
+    # Check for exact title match first
+    existing = await db.tasks.find_one({
+        "title": title,
+        "role": role,
+        "difficulty": difficulty
+    })
     
-    roles = ["Backend Engineer", "Frontend Engineer", "Systems Engineer", "Data Engineer"]
+    if existing:
+        return True
+    
+    # Also check for similar titles (case-insensitive partial match)
+    # This helps avoid generating near-duplicate tasks
+    import re
+    title_words = title.lower().split()
+    # If more than 3 words, check for significant overlap
+    if len(title_words) >= 3:
+        # Create a regex pattern for the first 3 significant words
+        significant_words = [w for w in title_words if len(w) > 3][:3]
+        if significant_words:
+            pattern = ".*".join(re.escape(w) for w in significant_words)
+            existing = await db.tasks.find_one({
+                "title": {"$regex": pattern, "$options": "i"},
+                "role": role,
+                "difficulty": difficulty
+            })
+            if existing:
+                return True
+    
+    return False
+
+
+async def generate_daily_tasks(db=None) -> List[Dict]:
+    """Generate daily tasks for all engineering roles and all difficulties.
+    
+    Generates one task for each role-difficulty combination (12 tasks total).
+    Skips generation if a similar task already exists to avoid duplicates.
+    
+    Args:
+        db: Optional database connection for deduplication checks
+    
+    Returns:
+        list: List of generated tasks (one per role per difficulty)
+    """
+    logger.info("Generating daily tasks for all roles and difficulties")
+    
+    # we have seven roles 
+    roles = ["Backend Engineer", "Frontend Engineer", "Systems Engineer", "Data Engineer", "Fullstack Engineer", "DevOps Engineer", "Security Engineer"]
     difficulties = ["beginner", "intermediate", "advanced"]
     tasks = []
+    skipped_count = 0
     
     for role in roles:
-        # Rotate difficulty for variety
-        difficulty = difficulties[len(tasks) % len(difficulties)]
-        
-        try:
-            task = await generate_task_with_ai(role, difficulty)
-            tasks.append(task)
-        except Exception as e:
-            logger.error(f"Failed to generate task for {role}: {str(e)}")
+        for difficulty in difficulties:
+            try:
+                # Generate a task
+                task = await generate_task_with_ai(role, difficulty)
+                
+                # Check for duplicates if database is provided
+                if db is not None:
+                    if await check_task_exists(db, task["title"], role, difficulty):
+                        logger.info(f"Skipping duplicate task: '{task['title']}' for {role}/{difficulty}")
+                        skipped_count += 1
+                        
+                        # Try regenerating up to 2 more times to get a unique task
+                        retries = 2
+                        unique_found = False
+                        for _ in range(retries):
+                            task = await generate_task_with_ai(role, difficulty)
+                            if not await check_task_exists(db, task["title"], role, difficulty):
+                                unique_found = True
+                                break
+                            logger.info(f"Retry also produced duplicate, trying again...")
+                        
+                        if not unique_found:
+                            logger.warning(f"Could not generate unique task for {role}/{difficulty} after {retries} retries")
+                            continue
+                
+                tasks.append(task)
+                logger.info(f"Generated task for {role}/{difficulty}: {task['title']}")
+                
+            except Exception as e:
+                logger.error(f"Failed to generate task for {role}/{difficulty}: {str(e)}")
     
-    logger.info(f"Generated {len(tasks)} daily tasks")
+    logger.info(f"Generated {len(tasks)} daily tasks, skipped {skipped_count} duplicates")
     return tasks
