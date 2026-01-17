@@ -20,6 +20,7 @@ from schemas.response import (
 from utils.auth import get_current_user
 from utils.ai import generate_ai_feedback, calculate_reasoning_score
 from utils.progress import update_progress
+from utils.subscription import check_task_limit
 from bson import ObjectId
 from logger import get_logger
 from utils.rate_limit import limiter
@@ -54,9 +55,22 @@ async def submit_response(
     
     Raises:
         HTTPException 400: If task ID is invalid
+        HTTPException 403: If user has exceeded task limit
         HTTPException 404: If task not found
     """
     db = get_database()
+    
+    # Check subscription limits
+    can_submit, limit_message = await check_task_limit(current_user["_id"])
+    if not can_submit:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "message": limit_message,
+                "upgrade_required": True,
+                "error_code": "TASK_LIMIT_EXCEEDED"
+            }
+        )
     
     # Verify task exists
     try:

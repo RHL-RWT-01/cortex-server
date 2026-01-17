@@ -23,6 +23,7 @@ from utils.admin import get_current_admin
 from bson import ObjectId
 from datetime import datetime
 from utils.rate_limit import limiter
+from utils.subscription import check_drill_limit
 
 router = APIRouter()
 
@@ -114,6 +115,18 @@ async def submit_drill(
     current_user: dict = Depends(get_current_user)
 ):
     """Submit answer to a thinking drill"""
+    # Check subscription limits
+    can_submit, limit_message = await check_drill_limit(current_user["_id"])
+    if not can_submit:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "message": limit_message,
+                "upgrade_required": True,
+                "error_code": "DRILL_LIMIT_EXCEEDED"
+            }
+        )
+    
     db = get_database()
     
     # Get drill

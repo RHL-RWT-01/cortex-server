@@ -10,7 +10,7 @@ from fastapi_crons import Crons, get_cron_router
 from contextlib import asynccontextmanager
 import time
 from database import connect_to_mongo, close_mongo_connection
-from routers import auth, users, tasks, responses, progress, drills, admin
+from routers import auth, users, tasks, responses, progress, drills, admin, subscriptions, webhooks
 from config import settings
 from logger import get_logger
 from utils.rate_limit import limiter
@@ -119,6 +119,8 @@ app.include_router(responses.router, prefix="/api/responses", tags=["Responses"]
 app.include_router(progress.router, prefix="/api/progress", tags=["Progress"])
 app.include_router(drills.router, prefix="/api/drills", tags=["Thinking Drills"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(subscriptions.router, prefix="/api/subscriptions", tags=["Subscriptions"])
+app.include_router(webhooks.router, prefix="/api/webhooks", tags=["Webhooks"])
 
 
 # Register cron jobs with decorator
