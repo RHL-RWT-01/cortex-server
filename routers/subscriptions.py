@@ -99,7 +99,7 @@ async def create_checkout(
         payment_data = {
             "billing": {
                 "city": "N/A",
-                "country": "US",
+                "country": "IN",
                 "state": "N/A",
                 "street": "N/A",
                 "zipcode": "00000"
