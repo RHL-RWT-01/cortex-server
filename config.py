@@ -39,6 +39,11 @@ class Settings(BaseSettings):
     dodo_product_id: str = ""  # Pro subscription product ID
     dodo_webhook_secret: str = ""  # Webhook signature verification secret
     
+    # CORS Configuration
+    # Comma-separated list of allowed origins. Set to "*" for development.
+    # Example: "https://cortex.example.com,https://www.cortex.example.com"
+    allowed_origins: str = "*"
+    
     class Config:
         env_file = ".env"
         case_sensitive = False

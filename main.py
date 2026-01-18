@@ -103,9 +103,16 @@ async def log_requests(request: Request, call_next):
 
 
 # CORS configuration
+# Parse allowed origins from comma-separated string
+# Use "*" in development, specific domains in production
+cors_origins = (
+    ["*"] if settings.allowed_origins == "*" 
+    else [origin.strip() for origin in settings.allowed_origins.split(",") if origin.strip()]
+)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
