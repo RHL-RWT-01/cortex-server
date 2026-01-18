@@ -22,28 +22,72 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-def verify_webhook_signature(payload: bytes, signature: str, secret: str) -> bool:
-    """Verify DodoPayments webhook signature using HMAC SHA256.
+def verify_webhook_signature(
+    payload: bytes, 
+    webhook_id: str,
+    webhook_timestamp: str,
+    webhook_signature: str, 
+    secret: str
+) -> bool:
+    """Verify DodoPayments webhook signature using Standard Webhooks format.
+    
+    DodoPayments uses the Standard Webhooks spec:
+    - Signed message = {webhook-id}.{webhook-timestamp}.{payload}
+    - HMAC SHA256 with base64-encoded secret
+    - Signature header may contain multiple signatures (v1,xxx v1,yyy)
     
     Args:
         payload: Raw request body bytes
-        signature: Signature from webhook header
-        secret: Webhook secret key
+        webhook_id: webhook-id header value
+        webhook_timestamp: webhook-timestamp header value  
+        webhook_signature: webhook-signature header value
+        secret: Webhook secret key (may be prefixed with 'whsec_')
         
     Returns:
         True if signature is valid
     """
+    import base64
+    
     if not secret:
         logger.warning("Webhook secret not configured, skipping verification")
         return True
     
-    expected_signature = hmac.new(
-        secret.encode(),
-        payload,
-        hashlib.sha256
-    ).hexdigest()
+    # Remove 'whsec_' prefix if present
+    if secret.startswith("whsec_"):
+        secret = secret[6:]
     
-    return hmac.compare_digest(signature, expected_signature)
+    # Decode the base64 secret
+    try:
+        secret_bytes = base64.b64decode(secret)
+    except Exception:
+        # If not base64, use as-is
+        secret_bytes = secret.encode()
+    
+    # Build the signed message: {id}.{timestamp}.{payload}
+    signed_payload = f"{webhook_id}.{webhook_timestamp}.{payload.decode('utf-8')}"
+    
+    # Compute expected signature
+    expected_signature = hmac.new(
+        secret_bytes,
+        signed_payload.encode('utf-8'),
+        hashlib.sha256
+    ).digest()
+    expected_signature_b64 = base64.b64encode(expected_signature).decode('utf-8')
+    
+    # The header may have multiple signatures like "v1,xxx v1,yyy"
+    # We need to check if any matches
+    for sig_part in webhook_signature.split(" "):
+        if "," in sig_part:
+            version, sig = sig_part.split(",", 1)
+            if version == "v1":
+                if hmac.compare_digest(sig, expected_signature_b64):
+                    return True
+        else:
+            # Fallback: compare directly
+            if hmac.compare_digest(sig_part, expected_signature_b64):
+                return True
+    
+    return False
 
 
 async def handle_subscription_active(data: dict):
@@ -216,25 +260,27 @@ EVENT_HANDLERS = {
 @router.post("/dodo")
 async def dodo_webhook(
     request: Request,
-    webhook_signature: str = Header(None, alias="webhook-signature")
+    webhook_id: str = Header(None, alias="webhook-id"),
+    webhook_signature: str = Header(None, alias="webhook-signature"),
+    webhook_timestamp: str = Header(None, alias="webhook-timestamp")
 ):
     """Handle incoming DodoPayments webhook events.
     
-    Verifies signature and processes subscription lifecycle events.
+    Verifies signature using Standard Webhooks format and processes subscription lifecycle events.
     """
     # Get raw body for signature verification
     body = await request.body()
     
     # Verify signature
     if settings.dodo_webhook_secret:
-        if not webhook_signature:
-            logger.warning("Webhook received without signature")
+        if not webhook_signature or not webhook_id or not webhook_timestamp:
+            logger.warning(f"Webhook received with missing headers: id={webhook_id}, sig={bool(webhook_signature)}, ts={webhook_timestamp}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Missing webhook signature"
+                detail="Missing webhook headers (webhook-id, webhook-signature, or webhook-timestamp)"
             )
         
-        if not verify_webhook_signature(body, webhook_signature, settings.dodo_webhook_secret):
+        if not verify_webhook_signature(body, webhook_id, webhook_timestamp, webhook_signature, settings.dodo_webhook_secret):
             logger.warning("Invalid webhook signature")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
